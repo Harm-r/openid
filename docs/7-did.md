@@ -16,6 +16,10 @@ third points at a web server, so resolving one is a fetch — and the identifier
 that decides where that fetch goes is supplied by whoever is being
 authenticated. Most of what follows is about that difference.
 
+ML-DSA public keys are accepted in JWK form (`kty: "AKP"`) in `did:jwk` and
+`did:web` documents. `did:key` supports the multicodec encodings implemented by
+its decoder; it does not define a dedicated raw-key ML-DSA encoding here.
+
 Resolution is most of what follows, but not all of it. A deployment identified by
 a `did:web` has to *serve* the document that identifier resolves to, and
 [Publishing a document](#publishing-a-document) builds that one.

@@ -72,6 +72,9 @@ final class PublicJwkValidatorTest extends TestCase
         yield 'RSA' => [self::RSA_JWK];
         yield 'RSA with RS256' => [self::RSA_JWK + ['alg' => 'RS256']];
         yield 'RSA with PS512' => [self::RSA_JWK + ['alg' => 'PS512']];
+        yield 'AKP ML-DSA-44' => [self::akpJwk('ML-DSA-44', 1312)];
+        yield 'AKP ML-DSA-65' => [self::akpJwk('ML-DSA-65', 1952)];
+        yield 'AKP ML-DSA-87' => [self::akpJwk('ML-DSA-87', 2592)];
         yield 'EC with a key management alg' => [self::EC_JWK + ['alg' => 'ECDH-ES']];
         yield 'RSA with a key management alg' => [self::RSA_JWK + ['alg' => 'RSA-OAEP-256']];
         // An algorithm this map does not recognise is left alone rather than guessed at.
@@ -121,6 +124,14 @@ final class PublicJwkValidatorTest extends TestCase
         yield 'RSA private member qi' => [
             self::RSA_JWK + ['qi' => 'secret'],
             'JWK member "qi" is not permitted for key type RSA.',
+        ];
+        yield 'AKP private member' => [
+            self::akpJwk('ML-DSA-44', 1312) + ['priv' => 'secret'],
+            'JWK member "priv" is not permitted for key type AKP.',
+        ];
+        yield 'AKP key with mismatched public key length' => [
+            self::akpJwk('ML-DSA-44', 1952),
+            'JWK member "pub" must decode to 1312 bytes for algorithm ML-DSA-44, but it decoded to 1952.',
         ];
         yield 'unknown member' => [
             self::EC_JWK + ['surprise' => 'value'],
@@ -262,6 +273,17 @@ final class PublicJwkValidatorTest extends TestCase
         yield 'non-string alg' => [
             self::EC_JWK + ['alg' => 256],
             'JWK member "alg" must be a non-empty string.',
+        ];
+    }
+
+
+    /** @return array<string, string> */
+    private static function akpJwk(string $algorithm, int $publicKeyLength): array
+    {
+        return [
+            'kty' => 'AKP',
+            'alg' => $algorithm,
+            'pub' => rtrim(strtr(base64_encode(str_repeat("\0", $publicKeyLength)), '+/', '-_'), '='),
         ];
     }
 }

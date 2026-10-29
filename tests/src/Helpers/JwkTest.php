@@ -99,6 +99,19 @@ final class JwkTest extends TestCase
     /**
      * @return array<string,string>
      */
+    protected static function akpKey(string $algorithm, int $publicKeyLength): array
+    {
+        return [
+            'kty' => 'AKP',
+            'alg' => $algorithm,
+            'pub' => self::encode(str_repeat("\0", $publicKeyLength)),
+        ];
+    }
+
+
+    /**
+     * @return array<string,string>
+     */
     protected static function rsaKey(int $bits = 2048): array
     {
         return [
@@ -117,6 +130,9 @@ final class JwkTest extends TestCase
         yield 'EC' => [self::EC_P256_KEY];
         yield 'RSA' => [self::rsaKey()];
         yield 'OKP' => [self::OKP_ED25519_KEY];
+        yield 'AKP ML-DSA-44' => [self::akpKey('ML-DSA-44', 1312)];
+        yield 'AKP ML-DSA-65' => [self::akpKey('ML-DSA-65', 1952)];
+        yield 'AKP ML-DSA-87' => [self::akpKey('ML-DSA-87', 2592)];
         yield 'EC on P-384' => [
             [
                 'crv' => 'P-384',
@@ -178,7 +194,10 @@ final class JwkTest extends TestCase
         yield 'null' => [null, 'not a JSON object'];
         yield 'an empty object' => [[], 'not a JSON object'];
         yield 'a list' => [[self::EC_P256_KEY], 'not a JSON object'];
-        yield 'no key type' => [array_diff_key(self::EC_P256_KEY, ['kty' => true]), 'not of an asymmetric key type'];
+        yield 'no key type' => [
+            array_diff_key(self::EC_P256_KEY, ['kty' => true]),
+            'not of an asymmetric key type',
+        ];
         yield 'a key type that is not a string' => [
             ['kty' => ['EC']] + self::EC_P256_KEY,
             'not of an asymmetric key type',
@@ -196,6 +215,30 @@ final class JwkTest extends TestCase
         yield 'an RSA key with other primes' => [
             self::rsaKey() + ['oth' => [['r' => 'AQAB', 'd' => 'AQAB', 't' => 'AQAB']]],
             'members which are not part of a public RSA key',
+        ];
+        yield 'an AKP private key' => [
+            self::akpKey('ML-DSA-44', 1312) + ['priv' => self::encode(str_repeat("\0", 32))],
+            'members which are not part of a public AKP key',
+        ];
+        yield 'an AKP key without an algorithm' => [
+            array_diff_key(self::akpKey('ML-DSA-44', 1312), ['alg' => true]),
+            'no alg member',
+        ];
+        yield 'an AKP key with an unsupported algorithm' => [
+            ['alg' => 'ML-DSA-99'] + self::akpKey('ML-DSA-44', 1312),
+            'not a supported ML-DSA key',
+        ];
+        yield 'an AKP key with a public key of the wrong length' => [
+            ['pub' => self::encode(str_repeat("\0", 1311))] + self::akpKey('ML-DSA-44', 1312),
+            'not the 1312 octets an ML-DSA-44 key takes',
+        ];
+        yield 'an AKP key with non-canonical public key encoding' => [
+            ['pub' => self::akpKey('ML-DSA-44', 1312)['pub'] . '='] + self::akpKey('ML-DSA-44', 1312),
+            'member pub is not in canonical base64url encoding',
+        ];
+        yield 'an AKP key with an EC curve member' => [
+            self::akpKey('ML-DSA-44', 1312) + ['crv' => 'P-256'],
+            'members which are not part of a public AKP key',
         ];
         yield 'an OKP private key' => [
             self::OKP_ED25519_KEY + ['d' => 'nWGxne_9WmC6hEr0kuwsxERJxWl7MmkZcDusAxyuf2A'],
@@ -382,6 +425,10 @@ final class JwkTest extends TestCase
         yield 'ES512 with P-521' => [['crv' => 'P-521'] + self::EC_P256_KEY, SignatureAlgorithmEnum::ES512];
         yield 'EdDSA with Ed25519' => [self::OKP_ED25519_KEY, SignatureAlgorithmEnum::EdDSA];
         yield 'EdDSA with Ed448' => [['crv' => 'Ed448'] + self::OKP_ED25519_KEY, SignatureAlgorithmEnum::EdDSA];
+        foreach ([44 => 1312, 65 => 1952, 87 => 2592] as $variant => $length) {
+            $algorithm = sprintf('ML-DSA-%d', $variant);
+            yield $algorithm => [self::akpKey($algorithm, $length), SignatureAlgorithmEnum::from($algorithm)];
+        }
     }
 
 
@@ -441,6 +488,26 @@ final class JwkTest extends TestCase
             SignatureAlgorithmEnum::EdDSA,
             'not a key algorithm EdDSA',
         ];
+        yield 'ML-DSA-44 with an ML-DSA-65 key' => [
+            self::akpKey('ML-DSA-65', 1952),
+            SignatureAlgorithmEnum::MLDSA44,
+            'not a key algorithm ML-DSA-44',
+        ];
+        yield 'ML-DSA-65 with an ML-DSA-87 key' => [
+            self::akpKey('ML-DSA-87', 2592),
+            SignatureAlgorithmEnum::MLDSA65,
+            'not a key algorithm ML-DSA-65',
+        ];
+        yield 'ML-DSA-87 with an ML-DSA-44 key' => [
+            self::akpKey('ML-DSA-44', 1312),
+            SignatureAlgorithmEnum::MLDSA87,
+            'not a key algorithm ML-DSA-87',
+        ];
+        yield 'ML-DSA with an Ed25519 key' => [
+            self::OKP_ED25519_KEY,
+            SignatureAlgorithmEnum::MLDSA44,
+            'not a key algorithm ML-DSA-44',
+        ];
         yield 'none' => [self::EC_P256_KEY, SignatureAlgorithmEnum::none, 'not a key algorithm none'];
     }
 
@@ -484,6 +551,22 @@ final class JwkTest extends TestCase
         $this->assertSame(
             $bits,
             $this->sut()->getRsaModulusBitLength(['kty' => 'RSA', 'n' => $modulus, 'e' => 'AQAB']),
+        );
+    }
+
+
+    public function testRequiredPublicMembersRetainAKPAlgorithmAndExcludePrivateMaterial(): void
+    {
+        $publicKey = self::akpKey('ML-DSA-44', 1312) + [
+            'kid' => 'mldsa-44',
+            'use' => 'sig',
+            'priv' => self::encode(str_repeat("\0", 32)),
+        ];
+        $accepted = $this->sut()->enforcePublicKey(array_diff_key($publicKey, ['priv' => true]));
+
+        $this->assertSame(
+            ['kty' => 'AKP', 'alg' => 'ML-DSA-44', 'pub' => $publicKey['pub']],
+            $this->sut()->getRequiredMembers($accepted),
         );
     }
 

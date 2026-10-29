@@ -41,6 +41,7 @@ class PublicJwkValidator
         'EC' => ['crv', 'x', 'y'],
         'OKP' => ['crv', 'x'],
         'RSA' => ['n', 'e'],
+        'AKP' => ['alg', 'pub'],
     ];
 
     /**
@@ -82,6 +83,7 @@ class PublicJwkValidator
     protected const KEY_MATERIAL_MEMBERS = [
         'e',
         'n',
+        'pub',
         'x',
         'y',
     ];
@@ -92,6 +94,13 @@ class PublicJwkValidator
     protected const CURVES_BY_KEY_TYPE = [
         'EC' => ['P-256', 'P-384', 'P-521', 'secp256k1'],
         'OKP' => ['Ed25519', 'Ed448', 'X25519', 'X448'],
+    ];
+
+    /** Public key byte lengths defined by each ML-DSA parameter set. */
+    protected const PUBLIC_KEY_LENGTHS_BY_ALGORITHM = [
+        'ML-DSA-44' => 1312,
+        'ML-DSA-65' => 1952,
+        'ML-DSA-87' => 2592,
     ];
 
     /**
@@ -131,6 +140,9 @@ class PublicJwkValidator
         'ES384' => [['EC'], ['P-384']],
         'ES512' => [['EC'], ['P-521']],
         'EdDSA' => [['OKP'], ['Ed25519', 'Ed448']],
+        'ML-DSA-44' => [['AKP'], null],
+        'ML-DSA-65' => [['AKP'], null],
+        'ML-DSA-87' => [['AKP'], null],
         'PS256' => [['RSA'], null],
         'PS384' => [['RSA'], null],
         'PS512' => [['RSA'], null],
@@ -205,6 +217,10 @@ class PublicJwkValidator
         $curve = is_string($curve) ? $curve : null;
 
         $coordinateLength = $curve === null ? null : (self::COORDINATE_LENGTHS_BY_CURVE[$curve] ?? null);
+        $algorithm = $jwk['alg'] ?? null;
+        $publicKeyLength = is_string($algorithm)
+        ? (self::PUBLIC_KEY_LENGTHS_BY_ALGORITHM[$algorithm] ?? null)
+        : null;
 
         foreach (self::KEY_MATERIAL_MEMBERS as $member) {
             if (!array_key_exists($member, $jwk)) {
@@ -213,18 +229,23 @@ class PublicJwkValidator
 
             $decoded = $this->decodeBase64Url($this->requireStringMember($jwk, $member), $member);
 
-            // Only the coordinates have a length their curve fixes; RSA moduli and exponents vary.
-            if ($coordinateLength === null || !in_array($member, ['x', 'y'], true)) {
+            // Coordinates and ML-DSA public keys have fixed lengths; RSA values do not.
+            if ($member !== 'pub' && !in_array($member, ['x', 'y'], true)) {
                 continue;
             }
 
-            if (strlen($decoded) !== $coordinateLength) {
+            $expectedLength = $member === 'pub' ? $publicKeyLength : $coordinateLength;
+
+            if ($expectedLength !== null && strlen($decoded) !== $expectedLength) {
+                $context = $member === 'pub' && is_string($algorithm)
+                ? 'algorithm ' . $algorithm
+                : 'curve ' . $curve;
                 throw new DidException(
                     sprintf(
-                        'JWK member "%s" must decode to %d bytes for curve %s, but it decoded to %d.',
+                        'JWK member "%s" must decode to %d bytes for %s, but it decoded to %d.',
                         $member,
-                        $coordinateLength,
-                        $curve,
+                        $expectedLength,
+                        $context,
                         strlen($decoded),
                     ),
                 );

@@ -42,6 +42,7 @@ class Jwk
         'EC' => ['crv', 'x', 'y'],
         'RSA' => ['n', 'e'],
         'OKP' => ['crv', 'x'],
+        'AKP' => ['alg', 'pub'],
     ];
 
     /**
@@ -158,7 +159,7 @@ class Jwk
 
         if (!is_string($keyType) || !array_key_exists($keyType, self::PUBLIC_KEY_MEMBERS_BY_KEY_TYPE)) {
             throw new InvalidValueException(
-                'JWK is not of an asymmetric key type: EC, RSA or OKP' . $suffix . '.',
+                'JWK is not of an asymmetric key type: EC, RSA, OKP or AKP' . $suffix . '.',
             );
         }
 
@@ -185,6 +186,36 @@ class Jwk
                     sprintf('JWK has no %s member, or it is not a non-empty string%s.', $member, $suffix),
                 );
             }
+        }
+
+        if ($keyType === 'AKP') {
+            $publicKeyLengths = [
+                SignatureAlgorithmEnum::MLDSA44->value => 1312,
+                SignatureAlgorithmEnum::MLDSA65->value => 1952,
+                SignatureAlgorithmEnum::MLDSA87->value => 2592,
+            ];
+            $algorithm = $jwk['alg'];
+
+            if (!is_string($algorithm) || !isset($publicKeyLengths[$algorithm])) {
+                throw new InvalidValueException('JWK is not a supported ML-DSA key' . $suffix . '.');
+            }
+
+            $publicKeyLength = $publicKeyLengths[$algorithm];
+            $publicKey = $this->decodeCanonicalBase64Url($jwk['pub'], 'pub', $suffix);
+
+            if (strlen($publicKey) !== $publicKeyLength) {
+                throw new InvalidValueException(
+                    sprintf(
+                        'JWK member pub is not the %d octets an %s key takes%s.',
+                        $publicKeyLength,
+                        $algorithm,
+                        $suffix,
+                    ),
+                );
+            }
+
+            /** @var array<string,mixed> $jwk */
+            return $jwk;
         }
 
         if ($keyType === 'RSA') {
@@ -302,6 +333,14 @@ class Jwk
                 break;
             case SignatureAlgorithmEnum::EdDSA:
                 if ($keyType === 'OKP' && in_array($curve, self::EDDSA_CURVES, true)) {
+                    return;
+                }
+
+                break;
+            case SignatureAlgorithmEnum::MLDSA44:
+            case SignatureAlgorithmEnum::MLDSA65:
+            case SignatureAlgorithmEnum::MLDSA87:
+                if ($keyType === 'AKP' && ($publicJwk['alg'] ?? null) === $signatureAlgorithm->value) {
                     return;
                 }
 

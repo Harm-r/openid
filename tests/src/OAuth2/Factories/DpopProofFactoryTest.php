@@ -114,6 +114,9 @@ final class DpopProofFactoryTest extends TestCase
             SignatureAlgorithmEnum::PS256,
             SignatureAlgorithmEnum::RS256,
             SignatureAlgorithmEnum::EdDSA,
+            SignatureAlgorithmEnum::MLDSA44,
+            SignatureAlgorithmEnum::MLDSA65,
+            SignatureAlgorithmEnum::MLDSA87,
         ] : $algorithms;
 
         $jwsSerializerManagerDecorator = (new JwsSerializerManagerDecoratorFactory())
@@ -164,6 +167,18 @@ final class DpopProofFactoryTest extends TestCase
             static fn(): JWK => JWKFactory::createOKPKey('Ed25519'),
             SignatureAlgorithmEnum::EdDSA,
         ];
+        foreach (
+            [
+            SignatureAlgorithmEnum::MLDSA44,
+            SignatureAlgorithmEnum::MLDSA65,
+            SignatureAlgorithmEnum::MLDSA87,
+            ] as $algorithm
+        ) {
+            yield $algorithm->value => [
+                static fn(): JWK => (new JWKFactory())->mldsa($algorithm->value),
+                $algorithm,
+            ];
+        }
     }
 
 
@@ -175,6 +190,10 @@ final class DpopProofFactoryTest extends TestCase
         \Closure $signingKey,
         SignatureAlgorithmEnum $algorithm,
     ): void {
+        if (!$algorithm->isSupported()) {
+            $this->markTestSkipped(sprintf('%s is not supported by this PHP/OpenSSL runtime.', $algorithm->value));
+        }
+
         $key = $signingKey();
         $sut = $this->sut();
 
@@ -204,7 +223,12 @@ final class DpopProofFactoryTest extends TestCase
      */
     protected static function requiredMembers(JWK $key): array
     {
-        return array_intersect_key($key->toPublic()->all(), array_flip(['kty', 'crv', 'x', 'y', 'n', 'e']));
+        $members = ['kty', 'crv', 'x', 'y', 'n', 'e'];
+        if ($key->get('kty') === 'AKP') {
+            $members = [...$members, 'alg', 'pub'];
+        }
+
+        return array_intersect_key($key->toPublic()->all(), array_flip($members));
     }
 
 
