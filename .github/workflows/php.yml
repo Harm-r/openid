@@ -97,7 +97,13 @@ jobs:
       - name: Require actual ML-DSA support in PHP's OpenSSL runtime
         if: ${{ matrix.php-versions == '8.5' }}
         run: |
-          php -r 'require "vendor/autoload.php"; if (!\SimpleSAML\OpenID\Algorithms\SignatureAlgorithmEnum::MLDSA44->isSupported()) { fwrite(STDERR, "This PHP/OpenSSL runtime cannot run ML-DSA.\n"); exit(1); }'
+          php -r '
+            require "vendor/autoload.php";
+            if (!\SimpleSAML\OpenID\Algorithms\SignatureAlgorithmEnum::MLDSA44->isSupported()) {
+                fwrite(STDERR, "This PHP/OpenSSL runtime cannot run ML-DSA.\n");
+                exit(1);
+            }
+          '
 
       - name: Run unit tests with coverage
         if: ${{ matrix.php-versions == '8.5' }}
