@@ -189,11 +189,7 @@ class Jwk
         }
 
         if ($keyType === 'AKP') {
-            $publicKeyLengths = [
-                SignatureAlgorithmEnum::MLDSA44->value => 1312,
-                SignatureAlgorithmEnum::MLDSA65->value => 1952,
-                SignatureAlgorithmEnum::MLDSA87->value => 2592,
-            ];
+            $publicKeyLengths = SignatureAlgorithmEnum::MLDSA_PUBLIC_KEY_LENGTHS;
             $algorithm = $jwk['alg'];
 
             if (!is_string($algorithm) || !isset($publicKeyLengths[$algorithm])) {

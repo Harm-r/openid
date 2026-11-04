@@ -96,8 +96,10 @@ class DidJwkResolver
         $jsonJwk = $this->helpers->json()->encode($jwk);
         $encodedJwk = $this->helpers->base64Url()->encode($jsonJwk);
 
-        // Apply the same bound as extraction, so this class cannot emit an identifier it would
-        // then refuse to resolve.
+        // The same bound extraction applies, so this class can never emit an identifier it would then
+        // refuse to resolve. Raising the bound instead would weaken a check that exists for values
+        // supplied by whoever is being authenticated, in order to carry members - a certificate chain,
+        // most of all - that a verification method has no use for.
         if (strlen($encodedJwk) > self::MAX_ENCODED_JWK_LENGTH) {
             throw new DidException(
                 sprintf(

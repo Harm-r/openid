@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace SimpleSAML\OpenID\Did;
 
+use SimpleSAML\OpenID\Algorithms\SignatureAlgorithmEnum;
 use SimpleSAML\OpenID\Exceptions\DidException;
 
 /**
@@ -94,13 +95,6 @@ class PublicJwkValidator
     protected const CURVES_BY_KEY_TYPE = [
         'EC' => ['P-256', 'P-384', 'P-521', 'secp256k1'],
         'OKP' => ['Ed25519', 'Ed448', 'X25519', 'X448'],
-    ];
-
-    /** Public key byte lengths defined by each ML-DSA parameter set. */
-    protected const PUBLIC_KEY_LENGTHS_BY_ALGORITHM = [
-        'ML-DSA-44' => 1312,
-        'ML-DSA-65' => 1952,
-        'ML-DSA-87' => 2592,
     ];
 
     /**
@@ -219,7 +213,7 @@ class PublicJwkValidator
         $coordinateLength = $curve === null ? null : (self::COORDINATE_LENGTHS_BY_CURVE[$curve] ?? null);
         $algorithm = $jwk['alg'] ?? null;
         $publicKeyLength = is_string($algorithm)
-        ? (self::PUBLIC_KEY_LENGTHS_BY_ALGORITHM[$algorithm] ?? null)
+        ? (SignatureAlgorithmEnum::MLDSA_PUBLIC_KEY_LENGTHS[$algorithm] ?? null)
         : null;
 
         foreach (self::KEY_MATERIAL_MEMBERS as $member) {

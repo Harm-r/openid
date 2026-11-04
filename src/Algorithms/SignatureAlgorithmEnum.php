@@ -52,6 +52,14 @@ enum SignatureAlgorithmEnum: string
     case RS512 = 'RS512';
 
 
+    /** Public key lengths in bytes for the ML-DSA parameter sets (RFC 9964). */
+    public const MLDSA_PUBLIC_KEY_LENGTHS = [
+        self::MLDSA44->value => 1312,
+        self::MLDSA65->value => 1952,
+        self::MLDSA87->value => 2592,
+    ];
+
+
     /**
      * Checks the runtime dependencies enforced by the upstream algorithm constructor.
      *
