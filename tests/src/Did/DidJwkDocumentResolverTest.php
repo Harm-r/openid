@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace SimpleSAML\Test\OpenID\Did;
 
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProviderExternal;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 use SimpleSAML\OpenID\Codebooks\VerificationMethodTypeEnum;
@@ -99,6 +100,25 @@ final class DidJwkDocumentResolverTest extends TestCase
     }
 
 
+    #[DataProviderExternal(DidJwkResolverTest::class, 'mlDsaPublicKeyProvider')]
+    public function testResolvesMlDsaVerificationMethod(string $algorithm, int $publicKeyLength): void
+    {
+        $jwk = [
+            'kty' => 'AKP',
+            'alg' => $algorithm,
+            'pub' => $this->helpers->base64Url()->encode(str_repeat("\x01", $publicKeyLength)),
+        ];
+        $did = (new DidJwkResolver($this->helpers))->generateDidJwkFromJwk($jwk);
+        $document = $this->sut()->resolveDocument($did);
+        $resolved = $document->resolveVerificationMethod(
+            new DidUrl($did . '#0'),
+            VerificationRelationshipEnum::Authentication,
+        );
+
+        $this->assertSame($jwk, $resolved->getPublicJwk());
+    }
+
+
     /**
      * Nothing is fetched, so a budget for network work having elapsed says nothing about whether this can be
      * answered. Refusing here would turn a free operation into a failure.
@@ -119,7 +139,7 @@ final class DidJwkDocumentResolverTest extends TestCase
     public function testRefusesAnOverLongIdentifier(): void
     {
         $this->expectException(DidException::class);
-        $this->expectExceptionMessage('longer than the 4096 characters');
+        $this->expectExceptionMessage('longer than the 6144 characters');
 
         $this->sut()->resolveDocument(
             DidJwkResolver::PREFIX . str_repeat('A', DidJwkResolver::MAX_ENCODED_JWK_LENGTH + 1),

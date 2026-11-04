@@ -350,14 +350,16 @@ Every one of these applies to input chosen by whoever is being authenticated.
 | Redirects | at most 3 hops, `https` only, revalidated per hop |
 | Host length | 253 characters, labels of at most 63 |
 | `did:key` base58 value | 2048 characters |
-| `did:jwk` encoded JWK | 4096 characters |
+| `did:jwk` encoded JWK | 6144 characters |
 
 The last two exist because decoding is the expensive part. Base58 decoding is
 superlinear in its input, so a value the size of a whole document costs seconds
 of CPU on something that could never have been a key; the `did:jwk` bound stops
 a base64url decode and a JSON decode running over a string as long as the
-request allowed. Both refuse before any decoding starts. An RSA-4096 public JWK
-encodes to about 1100 characters, so neither bound refuses anything legitimate.
+request allowed. Both refuse before any decoding starts. These are local resource
+limits, not limits imposed by the DID method specifications. A minimal ML-DSA-87
+public JWK encodes to 4662 characters; the `did:jwk` limit leaves room for optional
+JWK members as well.
 
 ## Handling a failure
 

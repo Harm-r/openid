@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace SimpleSAML\Test\OpenID\Did;
 
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 use SimpleSAML\OpenID\Did\DidJwkResolver;
@@ -58,7 +59,7 @@ final class DidJwkResolverTest extends TestCase
     public function testExtractJwkFromDidJwkThrowsForAnOverLongEncodedValue(): void
     {
         $this->expectException(DidException::class);
-        $this->expectExceptionMessage('longer than the 4096 characters');
+        $this->expectExceptionMessage('longer than the 6144 characters');
 
         $this->resolver->extractJwkFromDidJwk(
             DidJwkResolver::PREFIX . str_repeat('A', DidJwkResolver::MAX_ENCODED_JWK_LENGTH + 1),
@@ -120,7 +121,7 @@ final class DidJwkResolverTest extends TestCase
     public function testGenerateDidJwkFromJwkThrowsWhenTheResultWouldNotResolve(): void
     {
         $this->expectException(DidException::class);
-        $this->expectExceptionMessage('more than the 4096 characters');
+        $this->expectExceptionMessage('more than the 6144 characters');
 
         $this->resolver->generateDidJwkFromJwk([
             'kty' => 'RSA',
@@ -128,6 +129,36 @@ final class DidJwkResolverTest extends TestCase
             'e' => 'AQAB',
             'x5c' => [str_repeat('A', DidJwkResolver::MAX_ENCODED_JWK_LENGTH)],
         ]);
+    }
+
+
+    /**
+     * @return \Iterator<string, array{string, int}>
+     */
+    public static function mlDsaPublicKeyProvider(): \Iterator
+    {
+        yield 'ML-DSA-44' => ['ML-DSA-44', 1312];
+        yield 'ML-DSA-65' => ['ML-DSA-65', 1952];
+        yield 'ML-DSA-87' => ['ML-DSA-87', 2592];
+    }
+
+
+    #[DataProvider('mlDsaPublicKeyProvider')]
+    public function testMlDsaPublicJwkResolvesBack(string $algorithm, int $publicKeyLength): void
+    {
+        // Exercise encoding lengths without requiring an ML-DSA-capable runtime.
+        $jwk = [
+            'kty' => 'AKP',
+            'alg' => $algorithm,
+            'pub' => (new Helpers())->base64Url()->encode(str_repeat("\x01", $publicKeyLength)),
+            'kid' => 'test-key',
+            'use' => 'sig',
+            'key_ops' => ['verify'],
+        ];
+
+        $did = $this->resolver->generateDidJwkFromJwk($jwk);
+
+        $this->assertSame($jwk, $this->resolver->extractJwkFromDidJwk($did));
     }
 
 

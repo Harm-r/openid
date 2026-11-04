@@ -19,13 +19,14 @@ class DidJwkResolver
     /**
      * Longest encoded JWK this will decode.
      *
-     * Nothing legitimate comes close: the largest public JWK any supported key type produces is an
-     * RSA-4096 one, which is a few hundred base64url characters. The bound exists because the value
+     * This is a local resource limit, not a did:jwk specification requirement. A minimal ML-DSA-87
+     * public JWK encodes to 4662 characters; the bound leaves room for optional JWK members.
+     * The bound exists because the value
      * arrives in a proof key identifier chosen by whoever is being authenticated, and without it a
      * base64url decode and a JSON decode are both run over a string as long as the request allowed.
      * The did:key path is bounded the same way, by MultibaseKeyDecoder::MAX_BASE58_LENGTH.
      */
-    public const MAX_ENCODED_JWK_LENGTH = 4096;
+    public const MAX_ENCODED_JWK_LENGTH = 6144;
 
 
     public function __construct(
@@ -95,10 +96,8 @@ class DidJwkResolver
         $jsonJwk = $this->helpers->json()->encode($jwk);
         $encodedJwk = $this->helpers->base64Url()->encode($jsonJwk);
 
-        // The same bound extraction applies, so this class can never emit an identifier it would then
-        // refuse to resolve. Raising the bound instead would weaken a check that exists for values
-        // supplied by whoever is being authenticated, in order to carry members - a certificate chain,
-        // most of all - that a verification method has no use for.
+        // Apply the same bound as extraction, so this class cannot emit an identifier it would
+        // then refuse to resolve.
         if (strlen($encodedJwk) > self::MAX_ENCODED_JWK_LENGTH) {
             throw new DidException(
                 sprintf(
