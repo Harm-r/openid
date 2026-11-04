@@ -34,7 +34,8 @@
         "psr/http-message": "^2",
         "psr/log": "^3",
         "psr/simple-cache": "^3",
-        "web-token/jwt-library": "4.3.x-dev"
+        "web-token/jwt-library": "4.3.x-dev",
+        "web-token/jwt-unsecured": "^4.3"
     },
     "suggest": {
         "ext-curl": "Needed for outbound address pinning. Without it a destination policy that requires pinning, which is what DID resolution uses, refuses every request."
