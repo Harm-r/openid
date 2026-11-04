@@ -14,30 +14,6 @@ on:  # yamllint disable-line rule:truthy
   workflow_dispatch:
 
 jobs:
-  # Temporary: remove after diagnosing LINTER_TOKEN delivery to the reusable job.
-  debug-linter-secret:
-    name: Debug linter secret (temporary)
-    if: github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - name: Check caller secret availability and authentication
-        shell: bash
-        env:
-          LINTER_TOKEN: ${{ secrets.LINTER_TOKEN }}
-        run: |
-          if [[ -z "$LINTER_TOKEN" ]]; then
-            echo '::error::LINTER_TOKEN is empty in the caller workflow.'
-            exit 1
-          fi
-          echo 'LINTER_TOKEN is available in the caller workflow.'
-          status=$(printf 'header = "Authorization: Bearer %s"\n' "$LINTER_TOKEN" |
-            curl --config - --silent --show-error --output /dev/null \
-              --write-out '%{http_code}' https://api.github.com/rate_limit)
-          echo "GitHub authentication check: HTTP $status"
-          [[ "$status" == '200' ]]
-
   phplinter:
     name: 'PHP-Linter'
     strategy:
@@ -52,7 +28,8 @@ jobs:
         # workflow, whose supported list is 8.5 and 8.6 and drops 8.3 and 8.4.
         php-version: ['8.3', '8.4', '8.5']
 
-    uses: simplesamlphp/simplesamlphp-test-framework/.github/workflows/reusable_phplinter.yml@v1
+    # Temporary fork workaround; restore the upstream reference before the upstream PR.
+    uses: ./.github/workflows/reusable_phplinter.local.yml
     secrets: inherit
     with:
       php-version: ${{ matrix.php-version }}

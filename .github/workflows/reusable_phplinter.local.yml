@@ -1,0 +1,61 @@
+---
+# Temporary fork workaround, based on simplesamlphp-test-framework's v1 workflow.
+# Remove this file and restore the upstream uses reference before the upstream PR.
+
+name: Temporary PHP linter
+
+on:  # yamllint disable-line rule:truthy
+  workflow_call:
+    secrets:
+      LINTER_TOKEN:
+        required: false
+    inputs:
+      php-version:
+        description: 'The PHP-version to use for linting'
+        type: string
+        required: true
+      repository:
+        description: 'The repository that needs linting'
+        type: string
+        required: false
+        default: ${{ github.repository }}
+      ref:
+        description: 'The branch, tag or SHA that needs linting'
+        type: string
+        required: false
+        default: ${{ github.ref }}
+
+env:
+  supported: '["8.3", "8.4", "8.5"]'
+
+jobs:
+  linter:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Supported version check
+        if: contains(fromJSON(env.supported), inputs.php-version) == false
+        run: exit 1
+
+      - name: Checkout Code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          repository: ${{ inputs.repository }}
+          ref: ${{ inputs.ref }}
+
+      - name: Setup PHP runtime
+        uses: shivammathur/setup-php@v2
+        with:
+          tools: phive
+          php-version: ${{ inputs.php-version }}
+          coverage: "none"
+          extensions: :redis
+
+      - name: Install overtrue/phplint (9.8.0)
+        run: phive install overtrue/phplint@9.8.0 --force-accept-unsigned --target ./bin
+        env:
+          GITHUB_AUTH_TOKEN: ${{ secrets.LINTER_TOKEN || github.token }}
+
+      - name: Lint PHP files
+        run: ./bin/phplint lint . --no-cache --no-progress -v
