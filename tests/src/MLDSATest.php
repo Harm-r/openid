@@ -14,16 +14,23 @@ use PHPUnit\Framework\TestCase;
 use SimpleSAML\OpenID\Algorithms\AlgorithmManagerDecorator;
 use SimpleSAML\OpenID\Algorithms\SignatureAlgorithmBag;
 use SimpleSAML\OpenID\Algorithms\SignatureAlgorithmEnum;
+use SimpleSAML\OpenID\Decorators\DateIntervalDecorator;
 use SimpleSAML\OpenID\Factories\AlgorithmManagerDecoratorFactory;
+use SimpleSAML\OpenID\Factories\DateIntervalDecoratorFactory;
 use SimpleSAML\OpenID\Factories\JwsSerializerManagerDecoratorFactory;
+use SimpleSAML\OpenID\Helpers;
+use SimpleSAML\OpenID\Helpers\Json;
 use SimpleSAML\OpenID\Jwk\JwkDecorator;
 use SimpleSAML\OpenID\Jwks\Factories\JwksDecoratorFactory;
+use SimpleSAML\OpenID\Jwks\JwksDecorator;
 use SimpleSAML\OpenID\Jws;
 use SimpleSAML\OpenID\Jws\Factories\JwsDecoratorBuilderFactory;
 use SimpleSAML\OpenID\Jws\Factories\JwsVerifierDecoratorFactory;
 use SimpleSAML\OpenID\Jws\JwsDecorator;
 use SimpleSAML\OpenID\Jws\JwsDecoratorBuilder;
 use SimpleSAML\OpenID\Jws\JwsVerifierDecorator;
+use SimpleSAML\OpenID\Serializers\JwsSerializerBag;
+use SimpleSAML\OpenID\Serializers\JwsSerializerEnum;
 use SimpleSAML\OpenID\Serializers\JwsSerializerManagerDecorator;
 use SimpleSAML\OpenID\SupportedAlgorithms;
 use SimpleSAML\OpenID\SupportedSerializers;
@@ -44,6 +51,13 @@ use SimpleSAML\OpenID\SupportedSerializers;
 #[UsesClass(JwksDecoratorFactory::class)]
 #[UsesClass(SupportedAlgorithms::class)]
 #[UsesClass(SupportedSerializers::class)]
+#[UsesClass(DateIntervalDecorator::class)]
+#[UsesClass(DateIntervalDecoratorFactory::class)]
+#[UsesClass(Helpers::class)]
+#[UsesClass(Json::class)]
+#[UsesClass(JwksDecorator::class)]
+#[UsesClass(JwsSerializerBag::class)]
+#[UsesClass(JwsSerializerEnum::class)]
 final class MLDSATest extends TestCase
 {
     /**

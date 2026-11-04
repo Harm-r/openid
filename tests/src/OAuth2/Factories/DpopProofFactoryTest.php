@@ -114,9 +114,6 @@ final class DpopProofFactoryTest extends TestCase
             SignatureAlgorithmEnum::PS256,
             SignatureAlgorithmEnum::RS256,
             SignatureAlgorithmEnum::EdDSA,
-            SignatureAlgorithmEnum::MLDSA44,
-            SignatureAlgorithmEnum::MLDSA65,
-            SignatureAlgorithmEnum::MLDSA87,
         ] : $algorithms;
 
         $jwsSerializerManagerDecorator = (new JwsSerializerManagerDecoratorFactory())
@@ -195,7 +192,7 @@ final class DpopProofFactoryTest extends TestCase
         }
 
         $key = $signingKey();
-        $sut = $this->sut();
+        $sut = $this->sut('PT1M', $algorithm);
 
         $dpopProof = $sut->fromData(new JwkDecorator($key), $algorithm, $this->samplePayload);
 

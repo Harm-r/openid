@@ -25,12 +25,20 @@ use SimpleSAML\OpenID\Factories\AlgorithmManagerDecoratorFactory;
 use SimpleSAML\OpenID\Factories\ClaimFactory;
 use SimpleSAML\OpenID\Factories\DateIntervalDecoratorFactory;
 use SimpleSAML\OpenID\Factories\JwsSerializerManagerDecoratorFactory;
+use SimpleSAML\OpenID\Helpers;
+use SimpleSAML\OpenID\Helpers\Json;
+use SimpleSAML\OpenID\Helpers\Type;
 use SimpleSAML\OpenID\Jwk\JwkDecorator;
+use SimpleSAML\OpenID\Jwks\Factories\JwksDecoratorFactory;
+use SimpleSAML\OpenID\Jwks\JwksDecorator;
 use SimpleSAML\OpenID\Jws\Factories\JwsDecoratorBuilderFactory;
 use SimpleSAML\OpenID\Jws\Factories\JwsVerifierDecoratorFactory;
 use SimpleSAML\OpenID\Jws\Factories\ParsedJwsFactory;
+use SimpleSAML\OpenID\Jws\JwsDecorator;
 use SimpleSAML\OpenID\Jws\JwsDecoratorBuilder;
 use SimpleSAML\OpenID\Jws\JwsVerifierDecorator;
+use SimpleSAML\OpenID\Serializers\JwsSerializerBag;
+use SimpleSAML\OpenID\Serializers\JwsSerializerEnum;
 use SimpleSAML\OpenID\Serializers\JwsSerializerManagerDecorator;
 use SimpleSAML\OpenID\SupportedAlgorithms;
 use SimpleSAML\OpenID\SupportedSerializers;
@@ -58,6 +66,15 @@ use SimpleSAML\OpenID\SupportedSerializers;
 #[UsesClass(IdTokenFactory::class)]
 #[UsesClass(IdTokenHintFactory::class)]
 #[UsesClass(LogoutTokenFactory::class)]
+#[UsesClass(Helpers::class)]
+#[UsesClass(Json::class)]
+#[UsesClass(Type::class)]
+#[UsesClass(JwksDecoratorFactory::class)]
+#[UsesClass(JwksDecorator::class)]
+#[UsesClass(JwsDecorator::class)]
+#[UsesClass(JwsSerializerBag::class)]
+#[UsesClass(JwsSerializerEnum::class)]
+#[UsesClass(SupportedSerializers::class)]
 final class CoreTest extends TestCase
 {
     /**
