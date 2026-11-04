@@ -13,9 +13,9 @@ final class HashAlgorithmsEnumTest extends TestCase
 {
     public function testIanaNameIsValue(): void
     {
-        $this->assertSame(HashAlgorithmsEnum::SHA3_256->ianaName(), HashAlgorithmsEnum::SHA3_256->value);
-        $this->assertSame(HashAlgorithmsEnum::SHA3_384->ianaName(), HashAlgorithmsEnum::SHA3_384->value);
-        $this->assertSame(HashAlgorithmsEnum::SHA3_512->ianaName(), HashAlgorithmsEnum::SHA3_512->value);
+        $this->assertSame(HashAlgorithmsEnum::SHA3_256->value, HashAlgorithmsEnum::SHA3_256->ianaName());
+        $this->assertSame(HashAlgorithmsEnum::SHA3_384->value, HashAlgorithmsEnum::SHA3_384->ianaName());
+        $this->assertSame(HashAlgorithmsEnum::SHA3_512->value, HashAlgorithmsEnum::SHA3_512->ianaName());
     }
 
 
